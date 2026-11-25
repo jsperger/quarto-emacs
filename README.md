@@ -30,16 +30,16 @@ If you want to associate other files to the quarto polymode, you should use `pol
 ;; how to associate different extensions to the mode.
 (add-to-list 'auto-mode-alist '("\\.Rmd\\'" . poly-quarto-mode))
 
-;; Or, with use-package:
+;; Or, with built-in use-package (Emacs 29+):
 (use-package quarto-mode
-  :mode (("\\.Rmd" . poly-quarto-mode))
-  )
+  :mode (("\\.Rmd\\'" . poly-quarto-mode)))
 ```
 
 ### Dependencies
 
-Quarto-mode requires the following packages to be installed:
+Quarto-mode requires Emacs 29.1 or later (compatible with Emacs 31+) and the following packages:
 
+- `(emacs "29.1")`
 - `(polymode "0.2.2")`
 - `(poly-markdown "0.2.2")`
 - `(markdown-mode "2.3")`
