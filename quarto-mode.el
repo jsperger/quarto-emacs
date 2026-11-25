@@ -35,49 +35,61 @@
 ;;
 ;;; Code:
 
+(require 'cl-lib)
+(require 'easymenu)
 (require 'polymode)
 (require 'markdown-mode)
 (require 'poly-markdown)
 (require 'shell)
-(require 'mode-local)
+(require 'thingatpt)
+(require 'url-parse)
 (require 'request)
 
-;;; Requires ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;; Polymode definition ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defconst quarto-mode--docstring
-  "Minor mode for editing quarto files.")
+(defvar poly-markdown+r-polymode)
+(defvar poly-markdown+r-mode-map)
+(defvar poly-quarto-mode-map)
 
-;; this package doesn't require poly-R, ess-mode, or ess-r-mode, but
-;; works differently when these are available.
-(if (and (require 'ess-mode nil t)
-         (require 'ess-r-mode nil t)
-         (require 'poly-R nil t))
+;; This package does not require poly-R, ess-mode, or ess-r-mode, but
+;; integrates with them when they are available.
+(defconst quarto-mode--has-poly-r-p
+  (and (require 'ess-mode nil t)
+       (require 'ess-r-mode nil t)
+       (require 'poly-R nil t)
+       t)
+  "Non-nil when ESS and `poly-R' are available.")
+
+(define-obsolete-variable-alias 'quarto-root-polymode
+  'poly-quarto-polymode "0.1.0")
+
+(defvar poly-quarto-polymode
+  (if quarto-mode--has-poly-r-p
+      (clone poly-markdown+r-polymode
+             :name "poly-quarto-polymode"
+             '-minor-mode 'poly-quarto-mode
+             :innermodes '(:inherit poly-r-markdown-inline-code-innermode))
+    (clone poly-markdown-polymode
+           :name "poly-quarto-polymode"
+           '-minor-mode 'poly-quarto-mode
+           :innermodes '(:inherit poly-markdown-inline-code-innermode)))
+  "Configuration object for `poly-quarto-mode' polymode.")
+
 ;;;###autoload (autoload 'poly-quarto-mode "quarto-mode")
-    (define-polymode poly-quarto-mode poly-markdown+r-mode
-      "Minor mode for editing quarto files."
-      :lighter " Quarto"
-      :keymap nil
-      :innermodes '(:inherit poly-r-markdown-inline-code-innermode))
-;;;###autoload (autoload 'poly-quarto-mode "quarto-mode")
-  (define-polymode poly-quarto-mode poly-markdown-mode
-    "Minor mode for editing quarto files."
+(with-suppressed-warnings ((obsolete easy-mmode-define-keymap))
+  (define-polymode poly-quarto-mode poly-quarto-polymode
+    "Minor mode for editing Quarto files."
     :lighter " Quarto"
-    :keymap nil
-    :innermodes '(:inherit poly-markdown-inline-code-innermode)))
+    :keymap (define-keymap
+              :parent (if quarto-mode--has-poly-r-p
+                          poly-markdown+r-mode-map
+                        poly-markdown-mode-map))))
 
 ;;; Customizable variables ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup quarto nil
   "Settings for the quarto polymode"
   :group 'polymode)
-
-(defcustom quarto-root-polymode
-  (pm-polymode :name "R"
-               :hostmode 'pm-host/R
-               :innermodes '(pm-inner/fundamental))
-  "Root polymode with R host intended to be inherited from."
-  :group 'quarto
-  :type 'object)
 
 (defcustom quarto-poly-markdown-exporter
   (pm-shell-exporter :name "quarto"
